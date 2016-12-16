@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">ImageDownloader</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_detail">DetailActivity</string>
+    <string name="nav_item_start_all">Start All</string>
+    <string name="nav_item_cancel_all">Cancel All</string>
+    <string name="nav_item_delete_all">Delete All</string>
+</resources>
