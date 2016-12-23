@@ -35,8 +35,7 @@ public class RecyclerBindingAdapter extends RealmRecyclerViewAdapter<ImageRealm,
     public void onBindViewHolder(RecyclerBindingAdapter.BindingHolder holder, int position) {
 
         ImageRealm imageRealm = getData().get(position);
-
-        //imageRealm.setPath();
+        imageRealm.setPath(String.valueOf(context.getCacheDir()));
         holder.getBinding().setImage(imageRealm);
         holder.getBinding().setClick(itemClickHandler);
 
@@ -46,8 +45,7 @@ public class RecyclerBindingAdapter extends RealmRecyclerViewAdapter<ImageRealm,
 
     @Override
     public int getItemCount() {
-        return getData().size() // // TODO: 12/14/2016
-                ;
+        return getData().size();
     }
 
     static class BindingHolder extends RecyclerView.ViewHolder {

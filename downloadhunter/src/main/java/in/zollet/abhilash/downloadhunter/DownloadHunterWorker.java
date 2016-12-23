@@ -1,13 +1,17 @@
 package in.zollet.abhilash.downloadhunter;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.annotation.Nullable;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Call;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -20,15 +24,10 @@ import okio.ForwardingSource;
 import okio.Okio;
 import okio.Source;
 
-/**
- * Created by Abhilash on 12/16/2016.
- */
 
 public class DownloadHunterWorker implements Downloader {
 
     private DownloadHunterCallBack hunterCallBack;
-
-    Call mCall;
 
     public DownloadHunterWorker(DownloadHunterCallBack callBack) {
         hunterCallBack = callBack;
@@ -68,12 +67,6 @@ public class DownloadHunterWorker implements Downloader {
         Response response = null;
         try {
             response =client.newCall(httpRequest).execute();
-            /* try {
-            BufferedSink sink1 = Okio.buffer(Okio.sink(new File(getCacheDir()+getLastBitFromUrl(imageRealm.getUrl()))));
-            sink1.writeAll(responseBody.source());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
         } catch (IOException e) {
             e.printStackTrace();
             updateDownloadFailed(request, DownloadManager.STATUS_FAILED,"Unable to resolve host");
@@ -84,9 +77,21 @@ public class DownloadHunterWorker implements Downloader {
         if (responseCode >= 300) {
             response.body().close();
             updateDownloadFailed(request, response.code(), response.message());
+            return;
         }
         ResponseBody responseBody = response.body();
-        updateDownloadComplete(request,new DownloadResponse(responseBody));
+
+        Bitmap bmp = BitmapFactory.decodeStream(responseBody.byteStream());
+        File file = new File(String.valueOf(request.getDestinationURI()));
+        OutputStream outStream = null;
+        try {
+            outStream = new FileOutputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        boolean saved =bmp.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+        updateDownloadComplete(request,new DownloadResponse(responseBody),"Saved");
+
 
     }
 
@@ -100,22 +105,21 @@ public class DownloadHunterWorker implements Downloader {
             destinationFile.delete();
         }
     }
-    public void quit() {
-        if(mCall!= null) {
-            mCall.cancel();
-        }
-    }
 
-    private void updateDownloadComplete(DownloadRequest request , DownloadResponse response) {
-        hunterCallBack.postDownloadComplete(request, response);
+    private void updateDownloadComplete(DownloadRequest request , DownloadResponse response, String msg) {
+        hunterCallBack.postDownloadComplete(request, response, msg);
         request.setDownloadState(DownloadManager.STATUS_SUCCESSFUL);
 
     }
 
     private void updateDownloadFailed(DownloadRequest request, int errorCode, String errorMsg) {
-        // shouldAllowRedirects = false;
         request.setDownloadState(DownloadManager.STATUS_FAILED);
         hunterCallBack.postDownloadFailed(request,errorCode, errorMsg);
+    }
+
+    private void updateDownloadPaused(DownloadRequest request, long mContentLength, int progress, long downloadedBytes) {
+        request.setDownloadState(DownloadManager.STATUS_PAUSED);
+        hunterCallBack.postDownloadPaused(request,mContentLength, downloadedBytes, progress);
     }
 
     private void updateDownloadProgress(DownloadRequest request, long mContentLength, int progress, long downloadedBytes) {
@@ -125,14 +129,12 @@ public class DownloadHunterWorker implements Downloader {
     private class ProgressResponseBody extends ResponseBody {
 
         private final ResponseBody responseBody;
-        //private final ProgressListener progressListener;
         private BufferedSource bufferedSource;
         private DownloadRequest request;
 
         public ProgressResponseBody(ResponseBody responseBody, DownloadRequest request/*, ProgressListener progressListener*/) {
             this.responseBody = responseBody;
             this.request = request;
-            //this.progressListener = progressListener;
         }
 
         @Override
@@ -156,21 +158,28 @@ public class DownloadHunterWorker implements Downloader {
         private Source source(Source source) {
             return new ForwardingSource(source) {
                 long totalBytesRead = 0L;
-
                 @Override
-                public long read(Buffer sink, long byteCount)/* throws IOException*/ {
+                public long read(Buffer sink, long byteCount) {
                     long bytesRead = 0;
                     try {
                         bytesRead = super.read(sink, byteCount);
+
                     } catch (IOException e) {
-                        e.printStackTrace();
-                        updateDownloadFailed(request, DownloadManager.STATUS_FAILED,"Connection timed out");
+                        long downloadedBytes = totalBytesRead <= request.getTotalBytesRead() ? request.getTotalBytesRead() : totalBytesRead;
+                        request.setTotalBytesRead(downloadedBytes);
+                        updateDownloadPaused(request, responseBody.contentLength(), (int) ((downloadedBytes * 100) / responseBody.contentLength()), totalBytesRead);
                     }
-                    // read() returns the number of bytes read, or -1 if this source is exhausted.
-                    totalBytesRead += bytesRead != -1 ? bytesRead : 0;
+                        totalBytesRead += bytesRead != -1 ? bytesRead : 0;
+
+
+                    if(totalBytesRead <= request.getTotalBytesRead() )
+                        return bytesRead;
                     int progress = (int) ((totalBytesRead * 100) / responseBody.contentLength());
                     updateDownloadProgress(request,responseBody.contentLength(), progress, totalBytesRead);
-                    //progressListener.update(totalBytesRead, responseBody.contentLength(), bytesRead == -1);
+
+                    if(progress == 100) {
+                        updateDownloadComplete(request, new DownloadResponse(responseBody),"Downloaded");
+                    }
                     return bytesRead;
                 }
             };

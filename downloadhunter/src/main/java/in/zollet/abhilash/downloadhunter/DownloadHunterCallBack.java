@@ -47,11 +47,11 @@ public class DownloadHunterCallBack {
         };
     }
 
-    public void postDownloadComplete(final DownloadRequest request , final Downloader.DownloadResponse response) {
+    public void postDownloadComplete(final DownloadRequest request , final Downloader.DownloadResponse response,final String msg) {
         mCallBackExecutor.execute(new Runnable() {
             public void run() {
                 if (request.getStatusListener() != null) {
-                    request.getStatusListener().onDownloadComplete(request,response);
+                    request.getStatusListener().onDownloadComplete(request,response,msg);
                 }
             }
         });
@@ -76,4 +76,15 @@ public class DownloadHunterCallBack {
             }
         });
     }
+
+    public void postDownloadPaused(final DownloadRequest request,final long mContentLength,final long downloadedBytes,final int progress) {
+        mCallBackExecutor.execute(new Runnable() {
+            public void run() {
+                if (request.getStatusListener() != null) {
+                    request.getStatusListener().onPause(request, mContentLength, downloadedBytes, progress);
+                }
+            }
+        });
+    }
+
 }

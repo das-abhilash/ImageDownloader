@@ -7,8 +7,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.widget.ImageView;
 
-import java.io.File;
-
 public class DetailActivity extends AppCompatActivity {
 
     public static final String ARG_IMAGE = "image";
@@ -21,29 +19,19 @@ public class DetailActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         ImageView iv = (ImageView) findViewById(R.id.detail_demo);
-
-
         Bundle extras = getIntent().getExtras();
-        //String p = getCacheDir()+ "placeholder.PNG";
-        String  destinationUri = extras.getString(ARG_IMAGE,getCacheDir()+ "placeholder.PNG");
+        String  destinationUri = extras.getString(ARG_IMAGE);
 
-
-        new Thread() {
-            public void run() {
-                File image = new File(destinationUri);
-                Bitmap myBitmap = BitmapFactory.decodeFile(image.getAbsolutePath());
-
-                Bitmap finalBitmap = myBitmap;
-                runOnUiThread(() -> {
-                    iv.setImageBitmap(myBitmap);
-
-                });
-            }
-        }.start();
-        /*Drawable drawable = imageRealm.getDrawable();
-        iv.setImageDrawable(drawable);*/
+        Bitmap bitmap1 = BitmapFactory.decodeFile(destinationUri);
+        if(bitmap1 != null)
+        iv.setImageBitmap(bitmap1);
+        else
+        iv.setImageResource(R.drawable.placeholder);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
+
+
+
 
 }

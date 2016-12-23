@@ -7,10 +7,6 @@ import java.io.InputStream;
 
 import okhttp3.ResponseBody;
 
-/**
- * Created by Abhilash on 12/16/2016.
- */
-
 public interface Downloader {
 
     @Nullable

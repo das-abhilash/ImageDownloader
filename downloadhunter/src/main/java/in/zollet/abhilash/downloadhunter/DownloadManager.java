@@ -15,9 +15,9 @@ public interface DownloadManager {
     int STATUS_STARTED = 1 << 1;
 
     /**
-     * Status when the download network call is connecting to destination.
+     * Status when the download is paused.
      */
-    int STATUS_CONNECTING = 1 << 2;
+    int STATUS_PAUSED = 1 << 2;
 
     /**
      * Status when the download is currently running.
@@ -86,16 +86,12 @@ public interface DownloadManager {
      */
     int ERROR_CONNECTION_TIMEOUT_AFTER_RETRIES = 1009;
 
-    int add(DownloadRequest request);
+    String add(DownloadRequest request);
 
-    boolean cancel(int downloadId);
+    boolean cancel(String downloadId);
 
     void cancelAll();
 
-    int query(int downloadId);
 
-    void release();
-
-    boolean isReleased();
-
+    boolean pause(String requestId);
 }

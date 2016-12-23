@@ -27,11 +27,7 @@ public class DownloadRequest {
 
     private Uri mDestinationURI;
 
-    // private RetryPolicy mRetryPolicy;
-
-   /* private boolean mCancelled = false;
-
-    private boolean mDeleteDestinationFileOnFailure = true;*/
+    private long totalBytesRead = 0;
 
 
     private DownloadStatusListener mDownloadStatusListener;
@@ -78,7 +74,13 @@ public class DownloadRequest {
         return this;
     }
 
+    public long getTotalBytesRead() {
+        return totalBytesRead;
+    }
 
+    public void setTotalBytesRead(long totalBytesRead) {
+        this.totalBytesRead = totalBytesRead;
+    }
 
     public DownloadRequest setPriority(Priority priority) {
         mPriority = priority;
@@ -97,17 +99,6 @@ public class DownloadRequest {
     public Future getFuture() {
         return future;
     }
-
-
-
-   /* public RetryPolicy getRetryPolicy() {
-        return mRetryPolicy == null ? new DefaultRetryPolicy() : mRetryPolicy;
-    }
-
-    public DownloadRequest setRetryPolicy(RetryPolicy mRetryPolicy) {
-        this.mRetryPolicy = mRetryPolicy;
-        return this;
-    }*/
 
     public final int getDownloadId() {
         return mDownloadId;
@@ -143,6 +134,10 @@ public class DownloadRequest {
         return this;
     }
 
+    public boolean pause() {
+        return cancel();
+    }
+
     public boolean cancel() {
         mCancelled = true;
         if(future != null) {
@@ -150,6 +145,18 @@ public class DownloadRequest {
             return true;
         }
         return false;
+    }
+
+    public boolean resume() {
+        mCancelled = true;
+        new Thread() {
+            public void run() {
+                synchronized(this){
+                    notifyAll();
+                }
+            }
+        }.start();
+        return true;
     }
 
     public boolean isCancelled() {

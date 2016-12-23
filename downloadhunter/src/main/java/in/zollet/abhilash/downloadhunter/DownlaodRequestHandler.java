@@ -5,29 +5,24 @@ import android.os.Looper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by Abhilash on 12/16/2016.
- */
 
 public class DownlaodRequestHandler {
 
-    private AtomicInteger mSequenceGenerator = new AtomicInteger();
+    private Map<String, DownloadRequest> mCurrentRequests = new HashMap<String, DownloadRequest>();
 
-    private Map<Integer, DownloadRequest> mCurrentRequests = new HashMap<Integer, DownloadRequest>();
+    private HunterExecutorSupplier executorSupplier;
 
-    HunterExecutorSupplier executorSupplier;
-
-    DownloadHunterWorker myDownloadWorker;
+    private DownloadHunterWorker myDownloadWorker;
 
     public DownlaodRequestHandler(){
         executorSupplier = HunterExecutorSupplier.getInstance();
         myDownloadWorker = new DownloadHunterWorker(new DownloadHunterCallBack(new Handler(Looper.getMainLooper())));
     }
-    public int add(final DownloadRequest request){
-        final int downloadId = getDownloadId();
+    public String add(final DownloadRequest request){
+        final String downloadId = UUID.randomUUID().toString();
 
          Future future = executorSupplier.forHunterExecutor().submit(new Runnable() {
             @Override
@@ -40,17 +35,23 @@ public class DownlaodRequestHandler {
         return downloadId;
     }
 
-    private int getDownloadId() {
-        return mSequenceGenerator.incrementAndGet();
-    }
-
-    public boolean cancel(int downloadId) {
-
+    public boolean cancel(String downloadId) {
         DownloadRequest request = mCurrentRequests.get(downloadId);
         return request.cancel();
+    }
+
+    public String resume(String downloadId) {
+        DownloadRequest request = mCurrentRequests.get(downloadId);
+        return add(request);
     }
 
     public void cancelAll(){
 
     }
+
+    public boolean pause(String requestId) {
+        DownloadRequest request = mCurrentRequests.get(requestId);
+        return request.pause();
+    }
+
 }

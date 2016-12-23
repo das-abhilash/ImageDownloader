@@ -10,12 +10,11 @@ public class DownloadHunter implements DownloadManager {
 
     public DownloadHunter() {
         downlaodRequestHandler = new DownlaodRequestHandler();
-
     }
 
 
     @Override
-    public int add(final DownloadRequest request) throws IllegalArgumentException {
+    public String add(final DownloadRequest request) throws IllegalArgumentException {
 
         if (request == null) {
             throw new IllegalArgumentException("DownloadRequest cannot be null");
@@ -25,47 +24,21 @@ public class DownloadHunter implements DownloadManager {
     }
 
     @Override
-    public boolean cancel(int downloadId) {
-       /* checkReleased("cancel(...) called on a released ThinDownloadManager.");
-        return mRequestQueue.cancel(downloadId);*/
+    public boolean cancel(String downloadId) {
         return downlaodRequestHandler.cancel(downloadId);
-
     }
 
+    public String resume(String downloadId) {
+        return downlaodRequestHandler.resume(downloadId);
 
-
+    }
     @Override
     public void cancelAll() {
         downlaodRequestHandler.cancelAll();
     }
 
     @Override
-    public int query(int downloadId) {
-        checkReleased("query(...) called on a released ThinDownloadManager.");
-        return /*mRequestQueue.query(downloadId)*/1;
-    }
-
-    @Override
-    public void release() {
-        if (!isReleased()) {
-            // mRequestQueue.release();
-            //mRequestQueue = null;
-        }
-    }
-
-    @Override
-    public boolean isReleased() {
-        return false;
-    }
-
-   /* @Override
-    public boolean isReleased() {
-        return mRequestQueue == null;
-    }*/
-
-    private void checkReleased(String errorMessage) {
-        if (isReleased()) {
-            throw new IllegalStateException(errorMessage);
-        }
+    public boolean pause(String requestId) {
+        return downlaodRequestHandler.pause(requestId);
     }
 }

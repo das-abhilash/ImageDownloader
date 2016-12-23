@@ -1,56 +1,53 @@
 package in.zollet.abhilash.imagedownloader;
 
-import android.content.Context;
 import android.databinding.Bindable;
 import android.databinding.BindingAdapter;
 import android.databinding.Observable;
 import android.databinding.PropertyChangeRegistry;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.widget.ImageView;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 
 import io.realm.RealmObject;
 import io.realm.annotations.Ignore;
 import io.realm.annotations.PrimaryKey;
 
-/*@Parcel(implementations = { ImageRealmRealmProxy.class },
-        value = Parcel.Serialization.BEAN, analyze = { ImageRealm.class })*/
 public class ImageRealm extends RealmObject implements Observable {
 
     @PrimaryKey
     private String url;
     @Ignore
+    String requestId;
+    @Ignore
     private int progress;
     @Ignore
     private boolean isDownloadComplete;
     @Ignore
-    private
-    boolean isDownloadStarted = false;
+    private boolean isDownloadStarted = false;
     @Ignore
-    private
-    boolean isDownloadFailed;
+    private boolean isDownloadFailed;
+    @Ignore
+    private boolean isFileSaved = false;
     @Ignore
     private int downloadIcon;
-@Ignore
-    private Drawable drawable;
     @Ignore
     private String path;
+    @Ignore
+    private String placeholderPath;
 
-    @Bindable
-    public Drawable getDrawable() {
-        return drawable;
+    public String getRequestId() {
+        return requestId;
     }
 
-    public void setDrawable(Drawable drawable) {
-        this.drawable = drawable;
-        notifyPropertyChanged(BR.drawable);
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
+    }
+
+
+
+    @Bindable
+    public String getPlaceholderPath() {
+        return placeholderPath;
     }
 
     @Bindable
@@ -58,9 +55,11 @@ public class ImageRealm extends RealmObject implements Observable {
         return path;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setPath(String filePath) {
+        this.path = filePath + getLastBitFromUrl(url);
+        this.placeholderPath = filePath + "placeholder.PNG";
         notifyPropertyChanged(BR.path);
+        notifyPropertyChanged(BR.placeholderPath);
     }
 
     public ImageRealm() {
@@ -68,6 +67,10 @@ public class ImageRealm extends RealmObject implements Observable {
 
     public ImageRealm(String url) {
         this.url = url;
+    }
+
+    public static String getLastBitFromUrl(final String url) {
+        return url.replaceFirst(".*/([^/?]+).*", "$1");
     }
 
     @Bindable
@@ -91,28 +94,45 @@ public class ImageRealm extends RealmObject implements Observable {
     }
 
     @Bindable
+    public boolean getIsFileSaved() {
+        return isFileSaved;
+    }
+
+    @Bindable
     public boolean getIsDownloadFailed() {
         return isDownloadFailed;
     }
 
 
-    @BindingAdapter({"bind:imageDrawble"})
-    public static void loadImage(ImageView view,Drawable  drawable) {
-        view.setImageDrawable(drawable);
+    @BindingAdapter({"bind:imageDrawble", "bind:error"})
+    public static void loadImage(ImageView view, String path, String error) {
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        Bitmap bitmap1 = BitmapFactory.decodeFile(path, options);
+        if (bitmap1 == null) {
+            view.setImageDrawable(view.getContext().getResources().getDrawable(R.drawable.placeholder));
+            return;
+        }
+        view.setImageBitmap(bitmap1);
     }
 
-    public void setDownloadState(boolean downloadComplete, boolean downloadStarted, boolean downloadFailed) {
+    public void setDownloadState(boolean downloadComplete, boolean downloadStarted, boolean downloadFailed, boolean fileSaved) {
         isDownloadComplete = downloadComplete;
         isDownloadStarted = downloadStarted;
         isDownloadFailed = downloadFailed;
+        isFileSaved = fileSaved;
         notifyPropertyChanged(BR.isDownloadComplete);
+        notifyPropertyChanged(BR.isFileSaved);
         notifyPropertyChanged(BR.isDownloadStarted);
         notifyPropertyChanged(BR.isDownloadFailed);
-        if(isDownloadComplete)
+
+        if (isFileSaved) {
+            notifyPropertyChanged(BR.path);
+        } else if (isDownloadComplete) {
             setDownloadIcon(R.drawable.ic_check_circle_black_24dp);
-        else if(isDownloadStarted)
+        } else if (isDownloadStarted)
             setDownloadIcon(R.drawable.ic_clear_black_24dp);
-        else if(isDownloadFailed)
+        else if (isDownloadFailed)
             setDownloadIcon(R.drawable.ic_file_download_black_24dp);
         else
             setDownloadIcon(R.drawable.ic_file_download_black_24dp);
